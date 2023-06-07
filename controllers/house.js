@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
 const House = require('../models/House');
+
 module.exports = {
 
     //add new House
@@ -45,13 +45,9 @@ module.exports = {
         const id = req.params.id;
 
         House.findById(id).then((result) => {
-            res.status(200).json({
-                result
-            })
+            res.status(200).json({ result });
         }).catch(error => {
-            res.status(500).json({
-                error
-            })
+            res.status(500).json({ error });
         })
     },
 
@@ -61,31 +57,25 @@ module.exports = {
             const id = req.params.id;
             const data = req.body;
 
-            await House.updateOne({ _id: id }, data);
-            const house = await House.findOne({ _id: id });
-            res.status(200).json({ house: house });
+            // Checking whether the house exists
+            const existingHouse = await House.findOne({ _id: id });
+            if (!existingHouse) {
+                return res.status(404).json({ error: 'House not found' });
+            }
+
+            // Update only the attributes present in the data
+            Object.keys(data).forEach(key => {
+                if (data[key] !== undefined) {
+                    existingHouse[key] = data[key];
+                }
+            });
+
+            await existingHouse.save();
+            res.status(200).json({ house: existingHouse });
         } catch (err) {
-            res.status(500).json({ err: err.message });
+            res.status(500).json({ error: err.message });
         }
     },
-
-
-    // editHouse: async (req, res) => {
-    //     const data = req.body;
-
-    //     try {
-    //       const updatedHouse = await House.findOneAndUpdate(
-    //         { _id: mongoose.Types.ObjectId(req.params) },
-    //         { $set: { data: data } },
-    //         { new: true }
-    //       ).exec();
-
-    //       res.status(200).json({ house: updatedHouse });
-    //     } catch (error) {
-    //       console.log(error);
-    //       res.status(500).json({ error: error });
-    //     }
-    //   }
 
     deleteHouse: async (req, res) => {
         House.findByIdAndDelete(req.params.id)
